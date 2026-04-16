@@ -1,4 +1,4 @@
-import { cellKey } from "./config.js";
+const { cellKey } = window.TrailBattleConfig;
 
 function normalizeCells(cells, cols, rows) {
   const keys = new Set();
@@ -91,7 +91,7 @@ function hazardRing(cols, rows) {
   return cells;
 }
 
-export const ARENA_LAYOUTS = [
+const ARENA_LAYOUTS = [
   {
     id: "open-circuit",
     name: "Open Circuit",
@@ -242,11 +242,17 @@ export const ARENA_LAYOUTS = [
   },
 ];
 
-export function getLayoutById(id) {
+function getLayoutById(id) {
   return ARENA_LAYOUTS.find((layout) => layout.id === id) ?? ARENA_LAYOUTS[0];
 }
 
-export function buildObstacleMap(layoutId, cols, rows) {
+function buildObstacleMap(layoutId, cols, rows) {
   const layout = getLayoutById(layoutId);
   return normalizeCells(layout.build(cols, rows), cols, rows);
 }
+
+window.TrailBattleLayouts = {
+  ARENA_LAYOUTS,
+  buildObstacleMap,
+  getLayoutById,
+};

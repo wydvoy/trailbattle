@@ -1,18 +1,332 @@
-import {
-  BASE_TICK,
-  BOOST_DURATION,
-  CELL,
-  DEFAULT_WINS_NEEDED,
-  POWERUP_INTERVAL,
-  POWERUP_KICKOFF_DELAY,
-  TICK_BOOST,
-  TICK_NORMAL,
-  assignRandomColors,
-  cellKey,
-  clamp,
-  formatRound,
-} from "./config.js";
-import { ARENA_LAYOUTS, buildObstacleMap, getLayoutById } from "./layouts.js";
+const CELL = 28;
+const TICK_NORMAL = 120;
+const TICK_BOOST = 80;
+const BASE_TICK = 40;
+const BOOST_DURATION = 3000;
+const POWERUP_INTERVAL = 8000;
+const POWERUP_KICKOFF_DELAY = 2800;
+const DEFAULT_WINS_NEEDED = 3;
+
+const PLAYER_COLOR_POOL = [
+  "#ff6b35",
+  "#2ee6d6",
+  "#ff4fa3",
+  "#f7b801",
+  "#7b61ff",
+  "#8cfb5c",
+  "#ff7b72",
+  "#4fb3ff",
+];
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function hexToRgb(hex) {
+  return {
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  };
+}
+
+function mixWithWhite(rgb, amount) {
+  return {
+    r: Math.round(rgb.r + (255 - rgb.r) * amount),
+    g: Math.round(rgb.g + (255 - rgb.g) * amount),
+    b: Math.round(rgb.b + (255 - rgb.b) * amount),
+  };
+}
+
+function rgbToHex({ r, g, b }) {
+  return `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function assignRandomColors() {
+  const shuffled = [...PLAYER_COLOR_POOL].sort(() => Math.random() - 0.5);
+  const [p1Color, p2Color, p3Color] = shuffled;
+  const p1Rgb = hexToRgb(p1Color);
+  const p2Rgb = hexToRgb(p2Color);
+  const p3Rgb = hexToRgb(p3Color);
+  const root = document.documentElement.style;
+
+  root.setProperty("--p1-color", p1Color);
+  root.setProperty("--p1-head-color", rgbToHex(mixWithWhite(p1Rgb, 0.28)));
+  root.setProperty("--p1-boost-color", rgbToHex(mixWithWhite(p1Rgb, 0.52)));
+  root.setProperty("--p1-glow", `rgba(${p1Rgb.r}, ${p1Rgb.g}, ${p1Rgb.b}, 0.42)`);
+  root.setProperty("--p1-glow-boost", `rgba(${p1Rgb.r}, ${p1Rgb.g}, ${p1Rgb.b}, 0.78)`);
+
+  root.setProperty("--p2-color", p2Color);
+  root.setProperty("--p2-head-color", rgbToHex(mixWithWhite(p2Rgb, 0.28)));
+  root.setProperty("--p2-boost-color", rgbToHex(mixWithWhite(p2Rgb, 0.52)));
+  root.setProperty("--p2-glow", `rgba(${p2Rgb.r}, ${p2Rgb.g}, ${p2Rgb.b}, 0.42)`);
+  root.setProperty("--p2-glow-boost", `rgba(${p2Rgb.r}, ${p2Rgb.g}, ${p2Rgb.b}, 0.78)`);
+
+  root.setProperty("--p3-color", p3Color);
+  root.setProperty("--p3-head-color", rgbToHex(mixWithWhite(p3Rgb, 0.28)));
+  root.setProperty("--p3-boost-color", rgbToHex(mixWithWhite(p3Rgb, 0.52)));
+  root.setProperty("--p3-glow", `rgba(${p3Rgb.r}, ${p3Rgb.g}, ${p3Rgb.b}, 0.42)`);
+  root.setProperty("--p3-glow-boost", `rgba(${p3Rgb.r}, ${p3Rgb.g}, ${p3Rgb.b}, 0.78)`);
+}
+
+function formatRound(round) {
+  return String(round).padStart(2, "0");
+}
+
+function cellKey(x, y) {
+  return `${x},${y}`;
+}
+
+function normalizeCells(cells, cols, rows) {
+  const keys = new Set();
+
+  return cells.filter(({ x, y }) => {
+    if (x < 0 || x >= cols || y < 0 || y >= rows) {
+      return false;
+    }
+
+    const key = cellKey(x, y);
+    if (keys.has(key)) {
+      return false;
+    }
+
+    keys.add(key);
+    return true;
+  });
+}
+
+function splitChamber(cols, rows) {
+  const cells = [];
+  const wallX = Math.floor(cols / 2);
+  const gateHeight = Math.max(2, Math.floor(rows * 0.14));
+  const topGateStart = Math.max(2, Math.floor(rows * 0.2));
+  const bottomGateStart = Math.max(rows - gateHeight - 3, Math.floor(rows * 0.62));
+
+  for (let y = 1; y < rows - 1; y += 1) {
+    const inTopGate = y >= topGateStart && y < topGateStart + gateHeight;
+    const inBottomGate = y >= bottomGateStart && y < bottomGateStart + gateHeight;
+    if (!inTopGate && !inBottomGate) {
+      cells.push({ x: wallX, y });
+    }
+  }
+
+  return cells;
+}
+
+function crossfire(cols, rows) {
+  const cells = [];
+  const centerX = Math.floor(cols / 2);
+  const centerY = Math.floor(rows / 2);
+  const armLengthX = Math.max(4, Math.floor(cols * 0.18));
+  const armLengthY = Math.max(4, Math.floor(rows * 0.22));
+  const gateRadius = 2;
+
+  for (let x = centerX - armLengthX; x <= centerX + armLengthX; x += 1) {
+    if (Math.abs(x - centerX) > gateRadius) {
+      cells.push({ x, y: centerY });
+    }
+  }
+
+  for (let y = centerY - armLengthY; y <= centerY + armLengthY; y += 1) {
+    if (Math.abs(y - centerY) > gateRadius) {
+      cells.push({ x: centerX, y });
+    }
+  }
+
+  return cells;
+}
+
+function hazardRing(cols, rows) {
+  const cells = [];
+  const boxWidth = Math.max(8, Math.floor(cols * 0.34));
+  const boxHeight = Math.max(6, Math.floor(rows * 0.32));
+  const startX = Math.floor((cols - boxWidth) / 2);
+  const startY = Math.floor((rows - boxHeight) / 2);
+  const endX = startX + boxWidth - 1;
+  const endY = startY + boxHeight - 1;
+  const gateSpanX = Math.max(2, Math.floor(boxWidth * 0.16));
+  const gateSpanY = Math.max(2, Math.floor(boxHeight * 0.2));
+  const midX = Math.floor((startX + endX) / 2);
+  const midY = Math.floor((startY + endY) / 2);
+
+  for (let x = startX; x <= endX; x += 1) {
+    const topGate = Math.abs(x - midX) <= gateSpanX;
+    if (!topGate) {
+      cells.push({ x, y: startY });
+      cells.push({ x, y: endY });
+    }
+  }
+
+  for (let y = startY + 1; y < endY; y += 1) {
+    const sideGate = Math.abs(y - midY) <= gateSpanY;
+    if (!sideGate) {
+      cells.push({ x: startX, y });
+      cells.push({ x: endX, y });
+    }
+  }
+
+  return cells;
+}
+
+const ARENA_LAYOUTS = [
+  {
+    id: "open-circuit",
+    name: "Open Circuit",
+    difficulty: "Starter",
+    tagline: "Pure trail reads with no blockers.",
+    description: "A clean field for classic duels. Best for testing speed changes and score tuning.",
+    preview: [
+      ".......",
+      ".......",
+      ".......",
+      ".......",
+      ".......",
+    ],
+    systems: {},
+    build() {
+      return [];
+    },
+  },
+  {
+    id: "split-chamber",
+    name: "Split Chamber",
+    difficulty: "Advanced",
+    tagline: "One divider wall, two rotating gates.",
+    description: "The center split creates lane fights and punishes late turns near the gate openings.",
+    preview: [
+      "...#...",
+      "...#...",
+      ".......",
+      "...#...",
+      "...#...",
+    ],
+    systems: {
+      beacon: {
+        label: "Objective Beacon",
+        status: "Live",
+        description: "A roaming 2x2 control zone awards bonus score when a rider breaks through and captures it.",
+        bonusScore: 40,
+        size: 2,
+        spawnDelayMs: 2400,
+        durationMs: 7000,
+        respawnDelayMs: 2600,
+      },
+      summaries: [
+        {
+          label: "Objective Beacon",
+          status: "Live",
+          description: "A roaming 2x2 control zone awards bonus score when a rider breaks through and captures it.",
+        },
+      ],
+    },
+    build: splitChamber,
+  },
+  {
+    id: "crossfire",
+    name: "Crossfire",
+    difficulty: "Expert",
+    tagline: "A central cross forces diagonal feints.",
+    description: "Players orbit the middle and collide over the short gate windows near center mass.",
+    preview: [
+      "...#...",
+      "...#...",
+      "##...##",
+      "...#...",
+      "...#...",
+    ],
+    systems: {
+      beacon: {
+        label: "Objective Beacon",
+        status: "Live",
+        description: "Central pressure is rewarded with a score beacon that relocates after each capture.",
+        bonusScore: 50,
+        size: 2,
+        spawnDelayMs: 2200,
+        durationMs: 6200,
+        respawnDelayMs: 2200,
+      },
+      sweep: {
+        label: "Sweep Hazard",
+        status: "Live",
+        description: "Warning strips flash before a lethal cross-lane sweep activates across a row or column.",
+        axisMode: "alternate",
+        intervalMs: 5000,
+        warningMs: 1400,
+        activeMs: 1000,
+      },
+      summaries: [
+        {
+          label: "Objective Beacon",
+          status: "Live",
+          description: "Central pressure is rewarded with a score beacon that relocates after each capture.",
+        },
+        {
+          label: "Sweep Hazard",
+          status: "Live",
+          description: "Warning strips flash before a lethal cross-lane sweep activates across a row or column.",
+        },
+      ],
+    },
+    build: crossfire,
+  },
+  {
+    id: "hazard-ring",
+    name: "Hazard Ring",
+    difficulty: "Expert",
+    tagline: "An inner box with limited breach points.",
+    description: "Outer lanes stay fast while the ring interior becomes a trap if you commit too early.",
+    preview: [
+      ".#####.",
+      ".#...#.",
+      ".#...#.",
+      ".#...#.",
+      ".#####.",
+    ],
+    systems: {
+      beacon: {
+        label: "Objective Beacon",
+        status: "Live",
+        description: "A high-value beacon can spawn inside or around the ring, baiting risky dives through narrow gates.",
+        bonusScore: 60,
+        size: 2,
+        spawnDelayMs: 2600,
+        durationMs: 5600,
+        respawnDelayMs: 2200,
+      },
+      sweep: {
+        label: "Sweep Hazard",
+        status: "Live",
+        description: "Timed sweep waves cut across the box and punish players who overstay in the ring.",
+        axisMode: "row",
+        intervalMs: 4600,
+        warningMs: 1200,
+        activeMs: 1100,
+      },
+      summaries: [
+        {
+          label: "Objective Beacon",
+          status: "High Value",
+          description: "A high-value beacon can spawn inside or around the ring, baiting risky dives through narrow gates.",
+        },
+        {
+          label: "Sweep Hazard",
+          status: "Live",
+          description: "Timed sweep waves cut across the box and punish players who overstay in the ring.",
+        },
+      ],
+    },
+    build: hazardRing,
+  },
+];
+
+function getLayoutById(id) {
+  return ARENA_LAYOUTS.find((layout) => layout.id === id) ?? ARENA_LAYOUTS[0];
+}
+
+function buildObstacleMap(layoutId, cols, rows) {
+  const layout = getLayoutById(layoutId);
+  return normalizeCells(layout.build(cols, rows), cols, rows);
+}
 
 const PLAYER_IDS = ["p1", "p2", "p3"];
 
