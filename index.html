@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Trail Battle</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="src/styles/app.css">
+</head>
+<body>
+  <div class="app-shell">
+    <div class="ambient ambient--left"></div>
+    <div class="ambient ambient--right"></div>
+    <div class="ambient ambient--grid"></div>
+
+    <main class="app-frame">
+      <section id="lobby" class="screen screen--active">
+        <header class="topbar">
+          <div class="brand">
+            <span class="brand__mark"></span>
+            <div>
+              <p class="brand__eyebrow">Arena Builder Refactor</p>
+              <h1 class="brand__name">Trail Battle</h1>
+            </div>
+          </div>
+          <div class="status-pill">
+            <span class="status-pill__label">Mode</span>
+            <strong>Blueprint Duels</strong>
+          </div>
+        </header>
+
+        <section class="hero">
+          <p class="hero__eyebrow">Pick riders. Pick a room. Own the grid.</p>
+          <h2 class="hero__title">Hand-built arcade duels with arena pressure.</h2>
+          <p class="hero__copy">
+            The old exported screen dump is gone. Matches now run on reusable arena blueprints, so harder levels can
+            evolve around blockers, chokepoints, and future hazard systems.
+          </p>
+        </section>
+
+        <section class="lobby-grid">
+          <div class="panel">
+            <div class="panel__header">
+              <p class="panel__eyebrow">Roster</p>
+              <h3>Match setup</h3>
+            </div>
+
+            <div class="stack">
+              <div class="input-group">
+                <label for="p1Name">Player 1</label>
+                <input id="p1Name" class="player-input player-input--p1" type="text" value="ORANGE_CRUSH" placeholder="Enter name">
+              </div>
+
+              <div class="input-group">
+                <label for="p2Name">Player 2</label>
+                <input id="p2Name" class="player-input player-input--p2" type="text" value="CYAN_DRIFT" placeholder="Enter name">
+              </div>
+
+              <div class="option-block">
+                <div>
+                  <p class="option-block__label">Wins needed</p>
+                  <p class="option-block__copy">Longer sets make choke-point layouts matter more.</p>
+                </div>
+                <div class="round-options">
+                  <button type="button" class="round-opt" data-wins="1">1</button>
+                  <button type="button" class="round-opt round-opt--selected" data-wins="3">3</button>
+                  <button type="button" class="round-opt" data-wins="5">5</button>
+                  <button type="button" class="round-opt" data-wins="7">7</button>
+                </div>
+              </div>
+            </div>
+
+            <button id="goBtn" class="start-btn" type="button">Start Match</button>
+          </div>
+
+          <div class="panel panel--wide">
+            <div class="panel__header">
+              <p class="panel__eyebrow">Arena Blueprints</p>
+              <h3>Choose a room layout</h3>
+            </div>
+
+            <div id="layoutList" class="layout-list" aria-label="Arena layout options"></div>
+          </div>
+        </section>
+
+        <section class="lobby-grid lobby-grid--bottom">
+          <div class="panel">
+            <div class="panel__header">
+              <p class="panel__eyebrow">Controls</p>
+              <h3>Input map</h3>
+            </div>
+
+            <div class="controls-grid">
+              <div class="control-card">
+                <div class="key-stack">
+                  <span class="keycap">W</span>
+                  <div class="key-row">
+                    <span class="keycap">A</span>
+                    <span class="keycap">S</span>
+                    <span class="keycap">D</span>
+                  </div>
+                </div>
+                <p class="control-card__label control-card__label--p1">Player 1</p>
+              </div>
+
+              <div class="control-card">
+                <div class="key-stack">
+                  <span class="keycap">&uarr;</span>
+                  <div class="key-row">
+                    <span class="keycap">&larr;</span>
+                    <span class="keycap">&darr;</span>
+                    <span class="keycap">&rarr;</span>
+                  </div>
+                </div>
+                <p class="control-card__label control-card__label--p2">Player 2</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="panel">
+            <div class="panel__header">
+              <p class="panel__eyebrow">Next Systems</p>
+              <h3>Feature seeds</h3>
+            </div>
+
+            <ul class="idea-list">
+              <li>Moving sweep hazards that rotate through the grid and force reroutes.</li>
+              <li>Breakable room doors that open after score thresholds or power-up pickups.</li>
+              <li>Biome runs that chain multiple blueprints into a harder campaign ladder.</li>
+              <li>Objective beacons that award bonus points when a player survives inside a zone.</li>
+            </ul>
+          </div>
+        </section>
+      </section>
+
+      <section id="arena" class="screen">
+        <div class="arena-wrap">
+          <header class="hud">
+            <div class="hud-player hud-player--p1">
+              <span class="hud-player__label" id="hudP1Name">PLAYER 1</span>
+              <strong class="hud-player__score" id="hudP1Score">0</strong>
+              <div class="hud-wins" id="hudP1Wins"></div>
+            </div>
+
+            <div class="hud-center">
+              <div class="hud-meta">
+                <span class="hud-meta__label">Arena</span>
+                <strong id="hudLayoutName">Open Circuit</strong>
+                <span id="hudLayoutDifficulty" class="difficulty-pill">Starter</span>
+              </div>
+              <div class="hud-meta">
+                <span class="hud-meta__label">Round</span>
+                <strong id="hudRound">01</strong>
+              </div>
+            </div>
+
+            <div class="hud-player hud-player--p2">
+              <span class="hud-player__label" id="hudP2Name">PLAYER 2</span>
+              <strong class="hud-player__score" id="hudP2Score">0</strong>
+              <div class="hud-wins" id="hudP2Wins"></div>
+            </div>
+          </header>
+
+          <div class="arena-stage">
+            <div class="arena-container" id="arenaGrid" aria-label="Battle arena"></div>
+
+            <div class="overlay" id="countdownOverlay">
+              <p class="overlay__label" id="roundMsg"></p>
+              <strong class="overlay__value" id="countdownText"></strong>
+            </div>
+
+            <div class="overlay" id="pauseOverlay">
+              <p class="overlay__label">System Hold</p>
+              <strong class="overlay__value overlay__value--small">Paused</strong>
+              <button id="resumeBtn" class="overlay-btn" type="button">Resume</button>
+            </div>
+          </div>
+
+          <footer class="arena-footer">
+            <div class="hint-chip">
+              <span class="hint-dot"></span>
+              <span>Boost orbs increase speed and point gain.</span>
+            </div>
+            <div class="hint-chip hint-chip--secondary">
+              <span class="hint-key">Esc</span>
+              <span>Pause match</span>
+            </div>
+          </footer>
+        </div>
+      </section>
+
+      <section id="matchOver" class="screen">
+        <div class="results-shell">
+          <header class="results-header">
+            <button id="quitMatchBtn" class="ghost-btn" type="button">Back to Lobby</button>
+            <div class="brand brand--compact">
+              <span class="brand__mark"></span>
+              <h2 class="brand__name">Trail Battle</h2>
+            </div>
+          </header>
+
+          <section class="results-main">
+            <p class="results-tag">Match results</p>
+            <h2 class="results-title">Winner</h2>
+            <p class="results-winner" id="moWinnerName"></p>
+
+            <div class="results-layout">
+              <span class="results-layout__label">Blueprint</span>
+              <strong id="moLayoutName">Open Circuit</strong>
+              <span id="moLayoutDifficulty" class="difficulty-pill">Starter</span>
+            </div>
+
+            <div class="results-scores">
+              <article class="score-card score-card--p1">
+                <p class="score-card__label" id="moP1Label">Player 1</p>
+                <strong class="score-card__value" id="moP1Score">0</strong>
+                <p class="score-card__badge" id="moP1Badge"></p>
+              </article>
+
+              <article class="score-card score-card--p2">
+                <p class="score-card__label" id="moP2Label">Player 2</p>
+                <strong class="score-card__value" id="moP2Score">0</strong>
+                <p class="score-card__badge" id="moP2Badge"></p>
+              </article>
+            </div>
+
+            <div class="results-actions">
+              <button id="rematchBtn" class="primary-btn" type="button">Run It Back</button>
+              <button id="lobbyBtn" class="ghost-btn" type="button">Change Setup</button>
+            </div>
+          </section>
+
+          <footer class="results-footer">
+            <div class="results-stat">
+              <span>Rounds</span>
+              <strong id="moRounds">0</strong>
+            </div>
+            <div class="results-stat">
+              <span>Total ticks</span>
+              <strong id="moTicks">0</strong>
+            </div>
+            <div class="results-stat">
+              <span>Power-ups</span>
+              <strong id="moPowerups">0</strong>
+            </div>
+          </footer>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="src/game/main.js"></script>
+</body>
+</html>
