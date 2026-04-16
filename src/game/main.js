@@ -1,4 +1,4 @@
-import {
+const {
   BASE_TICK,
   BOOST_DURATION,
   CELL,
@@ -11,8 +11,8 @@ import {
   cellKey,
   clamp,
   formatRound,
-} from "./config.js";
-import { ARENA_LAYOUTS, buildObstacleMap, getLayoutById } from "./layouts.js";
+} = window.TrailBattleConfig;
+const { ARENA_LAYOUTS, buildObstacleMap, getLayoutById } = window.TrailBattleLayouts;
 
 const PLAYER_IDS = ["p1", "p2", "p3"];
 
@@ -81,7 +81,7 @@ const INPUT_BINDINGS = [
 
 const dom = {
   screens: document.querySelectorAll(".screen"),
-  enableP3: document.getElementById("enableP3"),
+  playerModeButtons: Array.from(document.querySelectorAll(".mode-toggle__button")),
   p3Group: document.getElementById("p3Group"),
   controlP3Card: document.getElementById("controlP3Card"),
   goBtn: document.getElementById("goBtn"),
@@ -173,11 +173,16 @@ function showScreen(name) {
 }
 
 function syncThreePlayerUI() {
-  const enabled = dom.enableP3.checked;
+  const enabled = state.isThreePlayer;
+  dom.playerModeButtons.forEach((button) => {
+    const isSelected = button.dataset.threePlayer === String(enabled);
+    button.classList.toggle("mode-toggle__button--selected", isSelected);
+    button.setAttribute("aria-pressed", String(isSelected));
+  });
   dom.p3Group.classList.toggle("is-hidden", !enabled);
-  dom.controlP3Card.classList.toggle("control-card--active", enabled);
-  dom.hudP3.classList.toggle("is-hidden", !state.isThreePlayer);
-  dom.moP3Card.classList.toggle("is-hidden", !state.isThreePlayer);
+  dom.controlP3Card.classList.toggle("is-hidden", !enabled);
+  dom.hudP3.classList.toggle("is-hidden", !enabled);
+  dom.moP3Card.classList.toggle("is-hidden", !enabled);
 }
 
 function buildLayoutPicker() {
@@ -218,6 +223,20 @@ function buildLayoutPicker() {
 function renderSystemList() {
   const summaries = getCurrentLayout().systems?.summaries ?? [];
   dom.systemList.innerHTML = "";
+
+  if (summaries.length === 0) {
+    const emptyState = document.createElement("article");
+    emptyState.className = "system-card system-card--empty";
+    emptyState.innerHTML = `
+      <div class="system-card__top">
+        <p class="system-card__title">No Live Modifiers</p>
+        <span class="system-badge">Clean</span>
+      </div>
+      <p class="system-card__copy">This blueprint runs the base duel only. No beacon or hazard systems are active.</p>
+    `;
+    dom.systemList.appendChild(emptyState);
+    return;
+  }
 
   summaries.forEach((summary) => {
     const card = document.createElement("article");
@@ -1078,7 +1097,6 @@ function resetMatchScores() {
 }
 
 function startSetupFromLobby() {
-  state.isThreePlayer = dom.enableP3.checked;
   syncThreePlayerUI();
 
   getActivePlayerIds().forEach((playerId) => {
@@ -1105,7 +1123,12 @@ function resetMatchStateForRematch() {
   startMatch();
 }
 
-dom.enableP3.addEventListener("change", syncThreePlayerUI);
+dom.playerModeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    state.isThreePlayer = button.dataset.threePlayer === "true";
+    syncThreePlayerUI();
+  });
+});
 
 dom.roundButtons.forEach((button) => {
   button.addEventListener("click", () => {

@@ -48,13 +48,16 @@
             </div>
 
             <div class="stack">
-              <label class="toggle-row" for="enableP3">
+              <div class="toggle-row">
                 <span class="toggle-row__copy">
                   <span class="option-block__label">3 Player Mode</span>
                   <span class="option-block__copy">Enable a third rider with Z, G, H, and J controls.</span>
                 </span>
-                <input id="enableP3" class="toggle-row__check" type="checkbox">
-              </label>
+                <div class="mode-toggle" role="group" aria-label="Player count">
+                  <button type="button" class="mode-toggle__button mode-toggle__button--selected" data-three-player="false" aria-pressed="true">2P</button>
+                  <button type="button" class="mode-toggle__button" data-three-player="true" aria-pressed="false">3P</button>
+                </div>
+              </div>
 
               <div class="input-group">
                 <label for="p1Name">Player 1</label>
@@ -130,7 +133,7 @@
                 <p class="control-card__label control-card__label--p2">Player 2</p>
               </div>
 
-              <div id="controlP3Card" class="control-card control-card--optional">
+              <div id="controlP3Card" class="control-card is-hidden">
                 <div class="key-stack">
                   <span class="keycap">Z</span>
                   <div class="key-row">
@@ -299,6 +302,8 @@
     </main>
   </div>
 
-  <script type="module" src="src/game/main.js"></script>
+  <script src="src/game/config.js"></script>
+  <script src="src/game/layouts.js"></script>
+  <script src="src/game/main.js"></script>
 </body>
 </html>
