@@ -1,4 +1,4 @@
-const {
+import {
   BASE_TICK,
   BOOST_DURATION,
   CELL,
@@ -11,8 +11,8 @@ const {
   cellKey,
   clamp,
   formatRound,
-} = window.TrailBattleConfig;
-const { ARENA_LAYOUTS, buildObstacleMap, getLayoutById } = window.TrailBattleLayouts;
+} from "./config.js";
+import { ARENA_LAYOUTS, buildObstacleMap, getLayoutById } from "./layouts.js";
 
 const PLAYER_IDS = ["p1", "p2", "p3"];
 

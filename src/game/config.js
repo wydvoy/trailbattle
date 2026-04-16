@@ -1,13 +1,13 @@
-const CELL = 28;
-const TICK_NORMAL = 120;
-const TICK_BOOST = 80;
-const BASE_TICK = 40;
-const BOOST_DURATION = 3000;
-const POWERUP_INTERVAL = 8000;
-const POWERUP_KICKOFF_DELAY = 2800;
-const DEFAULT_WINS_NEEDED = 3;
+export const CELL = 28;
+export const TICK_NORMAL = 120;
+export const TICK_BOOST = 80;
+export const BASE_TICK = 40;
+export const BOOST_DURATION = 3000;
+export const POWERUP_INTERVAL = 8000;
+export const POWERUP_KICKOFF_DELAY = 2800;
+export const DEFAULT_WINS_NEEDED = 3;
 
-const PLAYER_COLOR_POOL = [
+export const PLAYER_COLOR_POOL = [
   "#ff6b35",
   "#2ee6d6",
   "#ff4fa3",
@@ -18,7 +18,7 @@ const PLAYER_COLOR_POOL = [
   "#4fb3ff",
 ];
 
-function clamp(value, min, max) {
+export function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
@@ -42,7 +42,7 @@ function rgbToHex({ r, g, b }) {
   return `#${[r, g, b].map((value) => value.toString(16).padStart(2, "0")).join("")}`;
 }
 
-function assignRandomColors() {
+export function assignRandomColors() {
   const shuffled = [...PLAYER_COLOR_POOL].sort(() => Math.random() - 0.5);
   const [p1Color, p2Color, p3Color] = shuffled;
   const p1Rgb = hexToRgb(p1Color);
@@ -69,26 +69,10 @@ function assignRandomColors() {
   root.setProperty("--p3-glow-boost", `rgba(${p3Rgb.r}, ${p3Rgb.g}, ${p3Rgb.b}, 0.78)`);
 }
 
-function formatRound(round) {
+export function formatRound(round) {
   return String(round).padStart(2, "0");
 }
 
-function cellKey(x, y) {
+export function cellKey(x, y) {
   return `${x},${y}`;
 }
-
-window.TrailBattleConfig = {
-  BASE_TICK,
-  BOOST_DURATION,
-  CELL,
-  DEFAULT_WINS_NEEDED,
-  PLAYER_COLOR_POOL,
-  POWERUP_INTERVAL,
-  POWERUP_KICKOFF_DELAY,
-  TICK_BOOST,
-  TICK_NORMAL,
-  assignRandomColors,
-  cellKey,
-  clamp,
-  formatRound,
-};
