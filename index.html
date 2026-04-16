@@ -48,6 +48,14 @@
             </div>
 
             <div class="stack">
+              <label class="toggle-row" for="enableP3">
+                <span class="toggle-row__copy">
+                  <span class="option-block__label">3 Player Mode</span>
+                  <span class="option-block__copy">Enable a third rider with Z, G, H, and J controls.</span>
+                </span>
+                <input id="enableP3" class="toggle-row__check" type="checkbox">
+              </label>
+
               <div class="input-group">
                 <label for="p1Name">Player 1</label>
                 <input id="p1Name" class="player-input player-input--p1" type="text" value="ORANGE_CRUSH" placeholder="Enter name">
@@ -56,6 +64,11 @@
               <div class="input-group">
                 <label for="p2Name">Player 2</label>
                 <input id="p2Name" class="player-input player-input--p2" type="text" value="CYAN_DRIFT" placeholder="Enter name">
+              </div>
+
+              <div id="p3Group" class="input-group is-hidden">
+                <label for="p3Name">Player 3</label>
+                <input id="p3Name" class="player-input player-input--p3" type="text" value="LIME_RUSH" placeholder="Enter name">
               </div>
 
               <div class="option-block">
@@ -116,21 +129,28 @@
                 </div>
                 <p class="control-card__label control-card__label--p2">Player 2</p>
               </div>
+
+              <div id="controlP3Card" class="control-card control-card--optional">
+                <div class="key-stack">
+                  <span class="keycap">Z</span>
+                  <div class="key-row">
+                    <span class="keycap">G</span>
+                    <span class="keycap">H</span>
+                    <span class="keycap">J</span>
+                  </div>
+                </div>
+                <p class="control-card__label control-card__label--p3">Player 3</p>
+              </div>
             </div>
           </div>
 
           <div class="panel">
             <div class="panel__header">
-              <p class="panel__eyebrow">Next Systems</p>
-              <h3>Feature seeds</h3>
+              <p class="panel__eyebrow">Live Systems</p>
+              <h3>Selected room modifiers</h3>
             </div>
 
-            <ul class="idea-list">
-              <li>Moving sweep hazards that rotate through the grid and force reroutes.</li>
-              <li>Breakable room doors that open after score thresholds or power-up pickups.</li>
-              <li>Biome runs that chain multiple blueprints into a harder campaign ladder.</li>
-              <li>Objective beacons that award bonus points when a player survives inside a zone.</li>
-            </ul>
+            <div id="systemList" class="system-list" aria-label="Implemented room systems"></div>
           </div>
         </section>
       </section>
@@ -138,10 +158,18 @@
       <section id="arena" class="screen">
         <div class="arena-wrap">
           <header class="hud">
-            <div class="hud-player hud-player--p1">
-              <span class="hud-player__label" id="hudP1Name">PLAYER 1</span>
-              <strong class="hud-player__score" id="hudP1Score">0</strong>
-              <div class="hud-wins" id="hudP1Wins"></div>
+            <div class="hud-team">
+              <div class="hud-player hud-player--p1">
+                <span class="hud-player__label" id="hudP1Name">PLAYER 1</span>
+                <strong class="hud-player__score" id="hudP1Score">0</strong>
+                <div class="hud-wins" id="hudP1Wins"></div>
+              </div>
+
+              <div id="hudP3" class="hud-player hud-player--p3 is-hidden">
+                <span class="hud-player__label" id="hudP3Name">PLAYER 3</span>
+                <strong class="hud-player__score" id="hudP3Score">0</strong>
+                <div class="hud-wins" id="hudP3Wins"></div>
+              </div>
             </div>
 
             <div class="hud-center">
@@ -156,10 +184,12 @@
               </div>
             </div>
 
-            <div class="hud-player hud-player--p2">
-              <span class="hud-player__label" id="hudP2Name">PLAYER 2</span>
-              <strong class="hud-player__score" id="hudP2Score">0</strong>
-              <div class="hud-wins" id="hudP2Wins"></div>
+            <div class="hud-team hud-team--right">
+              <div class="hud-player hud-player--p2">
+                <span class="hud-player__label" id="hudP2Name">PLAYER 2</span>
+                <strong class="hud-player__score" id="hudP2Score">0</strong>
+                <div class="hud-wins" id="hudP2Wins"></div>
+              </div>
             </div>
           </header>
 
@@ -182,6 +212,10 @@
             <div class="hint-chip">
               <span class="hint-dot"></span>
               <span>Boost orbs increase speed and point gain.</span>
+            </div>
+            <div class="hint-chip">
+              <span class="hint-dot hint-dot--alert"></span>
+              <span id="arenaSystemStatus">Clean duel. No live room modifiers.</span>
             </div>
             <div class="hint-chip hint-chip--secondary">
               <span class="hint-key">Esc</span>
@@ -224,6 +258,12 @@
                 <strong class="score-card__value" id="moP2Score">0</strong>
                 <p class="score-card__badge" id="moP2Badge"></p>
               </article>
+
+              <article id="moP3Card" class="score-card score-card--p3 is-hidden">
+                <p class="score-card__label" id="moP3Label">Player 3</p>
+                <strong class="score-card__value" id="moP3Score">0</strong>
+                <p class="score-card__badge" id="moP3Badge"></p>
+              </article>
             </div>
 
             <div class="results-actions">
@@ -244,6 +284,14 @@
             <div class="results-stat">
               <span>Power-ups</span>
               <strong id="moPowerups">0</strong>
+            </div>
+            <div class="results-stat">
+              <span>Beacons</span>
+              <strong id="moBeacons">0</strong>
+            </div>
+            <div class="results-stat">
+              <span>Sweep waves</span>
+              <strong id="moHazards">0</strong>
             </div>
           </footer>
         </div>

@@ -14,40 +14,100 @@ import {
 } from "./config.js";
 import { ARENA_LAYOUTS, buildObstacleMap, getLayoutById } from "./layouts.js";
 
+const PLAYER_IDS = ["p1", "p2", "p3"];
+
+const PLAYER_META = {
+  p1: {
+    label: "Player 1",
+    defaultName: "ORANGE_CRUSH",
+    spawn: "left",
+    trailClass: "p1-trail",
+    headClass: "p1-head",
+    pipClass: "won-p1",
+    nameInputId: "p1Name",
+    hudNameId: "hudP1Name",
+    hudScoreId: "hudP1Score",
+    hudWinsId: "hudP1Wins",
+    resultLabelId: "moP1Label",
+    resultScoreId: "moP1Score",
+    resultBadgeId: "moP1Badge",
+  },
+  p2: {
+    label: "Player 2",
+    defaultName: "CYAN_DRIFT",
+    spawn: "right",
+    trailClass: "p2-trail",
+    headClass: "p2-head",
+    pipClass: "won-p2",
+    nameInputId: "p2Name",
+    hudNameId: "hudP2Name",
+    hudScoreId: "hudP2Score",
+    hudWinsId: "hudP2Wins",
+    resultLabelId: "moP2Label",
+    resultScoreId: "moP2Score",
+    resultBadgeId: "moP2Badge",
+  },
+  p3: {
+    label: "Player 3",
+    defaultName: "LIME_RUSH",
+    spawn: "top",
+    trailClass: "p3-trail",
+    headClass: "p3-head",
+    pipClass: "won-p3",
+    nameInputId: "p3Name",
+    hudNameId: "hudP3Name",
+    hudScoreId: "hudP3Score",
+    hudWinsId: "hudP3Wins",
+    resultLabelId: "moP3Label",
+    resultScoreId: "moP3Score",
+    resultBadgeId: "moP3Badge",
+  },
+};
+
+const INPUT_BINDINGS = [
+  { key: "w", playerId: "p1", dir: { x: 0, y: -1 } },
+  { key: "a", playerId: "p1", dir: { x: -1, y: 0 } },
+  { key: "s", playerId: "p1", dir: { x: 0, y: 1 } },
+  { key: "d", playerId: "p1", dir: { x: 1, y: 0 } },
+  { key: "arrowup", playerId: "p2", dir: { x: 0, y: -1 } },
+  { key: "arrowleft", playerId: "p2", dir: { x: -1, y: 0 } },
+  { key: "arrowdown", playerId: "p2", dir: { x: 0, y: 1 } },
+  { key: "arrowright", playerId: "p2", dir: { x: 1, y: 0 } },
+  { key: "z", playerId: "p3", dir: { x: 0, y: -1 } },
+  { key: "g", playerId: "p3", dir: { x: -1, y: 0 } },
+  { key: "h", playerId: "p3", dir: { x: 0, y: 1 } },
+  { key: "j", playerId: "p3", dir: { x: 1, y: 0 } },
+];
+
 const dom = {
   screens: document.querySelectorAll(".screen"),
-  p1NameInput: document.getElementById("p1Name"),
-  p2NameInput: document.getElementById("p2Name"),
+  enableP3: document.getElementById("enableP3"),
+  p3Group: document.getElementById("p3Group"),
+  controlP3Card: document.getElementById("controlP3Card"),
   goBtn: document.getElementById("goBtn"),
   roundButtons: Array.from(document.querySelectorAll(".round-opt")),
   layoutList: document.getElementById("layoutList"),
+  systemList: document.getElementById("systemList"),
   arenaGrid: document.getElementById("arenaGrid"),
   countdownOverlay: document.getElementById("countdownOverlay"),
   pauseOverlay: document.getElementById("pauseOverlay"),
   roundMsg: document.getElementById("roundMsg"),
   countdownText: document.getElementById("countdownText"),
   resumeBtn: document.getElementById("resumeBtn"),
-  hudP1Name: document.getElementById("hudP1Name"),
-  hudP2Name: document.getElementById("hudP2Name"),
-  hudP1Score: document.getElementById("hudP1Score"),
-  hudP2Score: document.getElementById("hudP2Score"),
-  hudP1Wins: document.getElementById("hudP1Wins"),
-  hudP2Wins: document.getElementById("hudP2Wins"),
+  arenaSystemStatus: document.getElementById("arenaSystemStatus"),
+  hudP3: document.getElementById("hudP3"),
   hudRound: document.getElementById("hudRound"),
   hudLayoutName: document.getElementById("hudLayoutName"),
   hudLayoutDifficulty: document.getElementById("hudLayoutDifficulty"),
   moWinnerName: document.getElementById("moWinnerName"),
   moLayoutName: document.getElementById("moLayoutName"),
   moLayoutDifficulty: document.getElementById("moLayoutDifficulty"),
-  moP1Label: document.getElementById("moP1Label"),
-  moP2Label: document.getElementById("moP2Label"),
-  moP1Score: document.getElementById("moP1Score"),
-  moP2Score: document.getElementById("moP2Score"),
-  moP1Badge: document.getElementById("moP1Badge"),
-  moP2Badge: document.getElementById("moP2Badge"),
+  moP3Card: document.getElementById("moP3Card"),
   moRounds: document.getElementById("moRounds"),
   moTicks: document.getElementById("moTicks"),
   moPowerups: document.getElementById("moPowerups"),
+  moBeacons: document.getElementById("moBeacons"),
+  moHazards: document.getElementById("moHazards"),
   rematchBtn: document.getElementById("rematchBtn"),
   lobbyBtn: document.getElementById("lobbyBtn"),
   quitMatchBtn: document.getElementById("quitMatchBtn"),
@@ -56,20 +116,34 @@ const dom = {
 const state = {
   screen: "lobby",
   selectedLayoutId: ARENA_LAYOUTS[0].id,
-  p1Name: "",
-  p2Name: "",
-  p1Score: 0,
-  p2Score: 0,
-  p1Wins: 0,
-  p2Wins: 0,
+  isThreePlayer: false,
+  playerNames: {
+    p1: PLAYER_META.p1.defaultName,
+    p2: PLAYER_META.p2.defaultName,
+    p3: PLAYER_META.p3.defaultName,
+  },
+  playerScores: {
+    p1: 0,
+    p2: 0,
+    p3: 0,
+  },
+  playerWins: {
+    p1: 0,
+    p2: 0,
+    p3: 0,
+  },
   round: 1,
   winsNeeded: DEFAULT_WINS_NEEDED,
   totalTicks: 0,
   totalPowerups: 0,
+  totalBeaconCaptures: 0,
+  totalHazardWaves: 0,
 };
 
 let cols = 0;
 let rows = 0;
+let players = {};
+let playerAccums = {};
 let obstacles = [];
 let obstacleSet = new Set();
 let gameLoop = null;
@@ -78,18 +152,32 @@ let powerupKickoffTimer = null;
 let countdownInterval = null;
 let countdownFinishTimer = null;
 let powerup = null;
-let p1 = null;
-let p2 = null;
+let objective = null;
+let sweep = null;
 let paused = false;
 let gameRunning = false;
 let countdownActive = false;
-let p1Accum = 0;
-let p2Accum = 0;
+
+function getActivePlayerIds() {
+  return state.isThreePlayer ? PLAYER_IDS : PLAYER_IDS.slice(0, 2);
+}
+
+function getCurrentLayout() {
+  return getLayoutById(state.selectedLayoutId);
+}
 
 function showScreen(name) {
   state.screen = name;
   dom.screens.forEach((screen) => screen.classList.remove("screen--active"));
   document.getElementById(name).classList.add("screen--active");
+}
+
+function syncThreePlayerUI() {
+  const enabled = dom.enableP3.checked;
+  dom.p3Group.classList.toggle("is-hidden", !enabled);
+  dom.controlP3Card.classList.toggle("control-card--active", enabled);
+  dom.hudP3.classList.toggle("is-hidden", !state.isThreePlayer);
+  dom.moP3Card.classList.toggle("is-hidden", !state.isThreePlayer);
 }
 
 function buildLayoutPicker() {
@@ -103,12 +191,7 @@ function buildLayoutPicker() {
     button.setAttribute("aria-pressed", String(layout.id === state.selectedLayoutId));
 
     const preview = layout.preview
-      .map((row) =>
-        row
-          .split("")
-          .map((cell) => `<span class="${cell === "#" ? "is-blocked" : ""}"></span>`)
-          .join(""),
-      )
+      .map((row) => row.split("").map((cell) => `<span class="${cell === "#" ? "is-blocked" : ""}"></span>`).join(""))
       .join("");
 
     button.innerHTML = `
@@ -132,8 +215,26 @@ function buildLayoutPicker() {
   syncLayoutSelection();
 }
 
+function renderSystemList() {
+  const summaries = getCurrentLayout().systems?.summaries ?? [];
+  dom.systemList.innerHTML = "";
+
+  summaries.forEach((summary) => {
+    const card = document.createElement("article");
+    card.className = "system-card";
+    card.innerHTML = `
+      <div class="system-card__top">
+        <p class="system-card__title">${summary.label}</p>
+        <span class="system-badge">${summary.status}</span>
+      </div>
+      <p class="system-card__copy">${summary.description}</p>
+    `;
+    dom.systemList.appendChild(card);
+  });
+}
+
 function syncLayoutSelection() {
-  const selectedLayout = getLayoutById(state.selectedLayoutId);
+  const layout = getCurrentLayout();
 
   document.querySelectorAll(".layout-card").forEach((card) => {
     const isSelected = card.dataset.layoutId === state.selectedLayoutId;
@@ -141,10 +242,12 @@ function syncLayoutSelection() {
     card.setAttribute("aria-pressed", String(isSelected));
   });
 
-  dom.hudLayoutName.textContent = selectedLayout.name;
-  dom.hudLayoutDifficulty.textContent = selectedLayout.difficulty;
-  dom.moLayoutName.textContent = selectedLayout.name;
-  dom.moLayoutDifficulty.textContent = selectedLayout.difficulty;
+  dom.hudLayoutName.textContent = layout.name;
+  dom.hudLayoutDifficulty.textContent = layout.difficulty;
+  dom.moLayoutName.textContent = layout.name;
+  dom.moLayoutDifficulty.textContent = layout.difficulty;
+  renderSystemList();
+  updateSystemStatus();
 }
 
 function selectLayout(layoutId) {
@@ -172,69 +275,111 @@ function rebuildArenaLayout() {
 
 function getCandidateRows() {
   const middle = Math.floor(rows / 2);
-  return [
-    middle,
-    middle - 2,
-    middle + 2,
-    middle - 4,
-    middle + 4,
-    middle - 1,
-    middle + 1,
-  ].filter((row, index, values) => row >= 1 && row < rows - 1 && values.indexOf(row) === index);
+  return [middle, middle - 2, middle + 2, middle - 4, middle + 4, middle - 1, middle + 1]
+    .filter((row, index, values) => row >= 1 && row < rows - 1 && values.indexOf(row) === index);
+}
+
+function getCandidateCols() {
+  const middle = Math.floor(cols / 2);
+  return [middle, middle - 3, middle + 3, middle - 1, middle + 1, middle - 5, middle + 5]
+    .filter((col, index, values) => col >= 1 && col < cols - 1 && values.indexOf(col) === index);
 }
 
 function isCellFree(x, y) {
   return !obstacleSet.has(cellKey(x, y));
 }
 
-function findSpawn(side) {
-  const movingRight = side === "left";
-  const xCandidates = movingRight
-    ? [2, 3, 4, 5, 6]
-    : [cols - 3, cols - 4, cols - 5, cols - 6, cols - 7];
+function findSpawn(spawnType) {
+  if (spawnType === "left") {
+    for (const y of getCandidateRows()) {
+      for (const x of [2, 3, 4, 5, 6]) {
+        if (isCellFree(x, y) && isCellFree(x + 1, y)) {
+          return { x, y, dir: { x: 1, y: 0 } };
+        }
+      }
+    }
+    return { x: 2, y: 2, dir: { x: 1, y: 0 } };
+  }
 
-  for (const y of getCandidateRows()) {
-    for (const x of xCandidates) {
-      const nextX = movingRight ? x + 1 : x - 1;
-      if (isCellFree(x, y) && isCellFree(nextX, y)) {
-        return { x, y };
+  if (spawnType === "right") {
+    for (const y of getCandidateRows()) {
+      for (const x of [cols - 3, cols - 4, cols - 5, cols - 6, cols - 7]) {
+        if (isCellFree(x, y) && isCellFree(x - 1, y)) {
+          return { x, y, dir: { x: -1, y: 0 } };
+        }
+      }
+    }
+    return { x: cols - 3, y: rows - 3, dir: { x: -1, y: 0 } };
+  }
+
+  for (const x of getCandidateCols()) {
+    for (const y of [2, 3, 4, 5]) {
+      if (isCellFree(x, y) && isCellFree(x, y + 1)) {
+        return { x, y, dir: { x: 0, y: 1 } };
       }
     }
   }
 
-  return side === "left" ? { x: 2, y: 2 } : { x: cols - 3, y: rows - 3 };
+  return { x: Math.floor(cols / 2), y: 2, dir: { x: 0, y: 1 } };
 }
 
-function resetPositions() {
-  const p1Spawn = findSpawn("left");
-  const p2Spawn = findSpawn("right");
+function resetPlayers() {
+  players = {};
+  playerAccums = {};
 
-  p1 = {
-    segments: [{ x: p1Spawn.x, y: p1Spawn.y }],
-    dir: { x: 1, y: 0 },
-    nextDir: { x: 1, y: 0 },
-    boost: false,
-    boostEnd: 0,
-  };
+  getActivePlayerIds().forEach((playerId) => {
+    const spawn = findSpawn(PLAYER_META[playerId].spawn);
+    players[playerId] = {
+      id: playerId,
+      segments: [{ x: spawn.x, y: spawn.y }],
+      dir: { ...spawn.dir },
+      nextDir: { ...spawn.dir },
+      boost: false,
+      boostEnd: 0,
+      alive: true,
+    };
+    playerAccums[playerId] = 0;
+  });
+}
 
-  p2 = {
-    segments: [{ x: p2Spawn.x, y: p2Spawn.y }],
-    dir: { x: -1, y: 0 },
-    nextDir: { x: -1, y: 0 },
-    boost: false,
-    boostEnd: 0,
-  };
+function resetModifierState() {
+  const systems = getCurrentLayout().systems ?? {};
 
+  objective = systems.beacon
+    ? {
+        config: systems.beacon,
+        cells: [],
+        cooldownRemaining: systems.beacon.spawnDelayMs,
+        activeRemaining: 0,
+      }
+    : null;
+
+  sweep = systems.sweep
+    ? {
+        config: systems.sweep,
+        phase: "idle",
+        cells: [],
+        timer: systems.sweep.intervalMs,
+        label: "Sweep standby",
+        sequenceIndex: 0,
+      }
+    : null;
+
+  updateSystemStatus();
+}
+
+function resetRoundState() {
   powerup = null;
   paused = false;
   gameRunning = false;
   countdownActive = false;
-  p1Accum = 0;
-  p2Accum = 0;
+  resetPlayers();
+  resetModifierState();
 }
 
 function startMatch() {
   showScreen("arena");
+  syncThreePlayerUI();
   sizeArena();
   startRound();
 }
@@ -278,7 +423,7 @@ function startRound() {
   dom.arenaGrid.innerHTML = "";
 
   sizeArena();
-  resetPositions();
+  resetRoundState();
   updateHUD();
   render();
 
@@ -330,19 +475,268 @@ function scheduleTick() {
   gameLoop = window.setTimeout(gameTick, BASE_TICK);
 }
 
-function movePlayer(player, otherPlayer, isPlayerOne) {
-  player.dir = { ...player.nextDir };
-  const currentHead = player.segments[player.segments.length - 1];
-  const head = {
-    x: currentHead.x + player.dir.x,
-    y: currentHead.y + player.dir.y,
-  };
+function getAllTrailCells(excludeId = null) {
+  const segments = [];
+  getActivePlayerIds().forEach((playerId) => {
+    if (playerId !== excludeId && players[playerId]) {
+      segments.push(...players[playerId].segments);
+    }
+  });
+  return segments;
+}
 
-  if (checkCollision(head, player.segments, otherPlayer.segments)) {
-    return { head, dead: true };
+function getReservedCells() {
+  const occupied = new Set(obstacles.map(({ x, y }) => cellKey(x, y)));
+
+  getActivePlayerIds().forEach((playerId) => {
+    const player = players[playerId];
+    if (!player) {
+      return;
+    }
+    player.segments.forEach(({ x, y }) => occupied.add(cellKey(x, y)));
+  });
+
+  if (powerup) {
+    occupied.add(cellKey(powerup.x, powerup.y));
   }
 
-  player.segments.push(head);
+  if (objective) {
+    objective.cells.forEach(({ x, y }) => occupied.add(cellKey(x, y)));
+  }
+
+  if (sweep) {
+    sweep.cells.forEach(({ x, y }) => occupied.add(cellKey(x, y)));
+  }
+
+  return occupied;
+}
+
+function spawnObjective() {
+  if (!objective) {
+    return;
+  }
+
+  const occupied = getReservedCells();
+  const size = objective.config.size ?? 2;
+  const maxX = cols - size - 1;
+  const maxY = rows - size - 1;
+
+  for (let attempt = 0; attempt < 120; attempt += 1) {
+    const startX = Math.floor(Math.random() * Math.max(1, maxX - 1)) + 1;
+    const startY = Math.floor(Math.random() * Math.max(1, maxY - 1)) + 1;
+    const cells = [];
+    let blocked = false;
+
+    for (let x = startX; x < startX + size; x += 1) {
+      for (let y = startY; y < startY + size; y += 1) {
+        const key = cellKey(x, y);
+        if (occupied.has(key)) {
+          blocked = true;
+          break;
+        }
+        cells.push({ x, y });
+      }
+      if (blocked) {
+        break;
+      }
+    }
+
+    if (!blocked) {
+      objective.cells = cells;
+      objective.activeRemaining = objective.config.durationMs;
+      objective.cooldownRemaining = 0;
+      return;
+    }
+  }
+}
+
+function clearObjective(cooldown) {
+  if (!objective) {
+    return;
+  }
+
+  objective.cells = [];
+  objective.activeRemaining = 0;
+  objective.cooldownRemaining = cooldown;
+}
+
+function isObjectiveCell(head) {
+  return Boolean(objective && objective.cells.some((cell) => cell.x === head.x && cell.y === head.y));
+}
+
+function getSweepLaneCandidates(length) {
+  return [Math.floor(length * 0.22), Math.floor(length * 0.38), Math.floor(length * 0.5), Math.floor(length * 0.66), Math.floor(length * 0.8)]
+    .filter((value, index, values) => value > 0 && value < length - 1 && values.indexOf(value) === index);
+}
+
+function getSweepPattern(sequenceIndex) {
+  const axisMode = sweep.config.axisMode ?? "alternate";
+  const axis = axisMode === "alternate" ? (sequenceIndex % 2 === 0 ? "row" : "column") : axisMode;
+  const laneCandidates = axis === "row" ? getSweepLaneCandidates(rows) : getSweepLaneCandidates(cols);
+  const lane = laneCandidates[sequenceIndex % laneCandidates.length];
+  const cells = [];
+
+  if (axis === "row") {
+    for (let x = 0; x < cols; x += 1) {
+      if (!obstacleSet.has(cellKey(x, lane))) {
+        cells.push({ x, y: lane });
+      }
+    }
+  } else {
+    for (let y = 0; y < rows; y += 1) {
+      if (!obstacleSet.has(cellKey(lane, y))) {
+        cells.push({ x: lane, y });
+      }
+    }
+  }
+
+  return {
+    cells,
+    label: `${axis === "row" ? "Row" : "Column"} ${formatRound(lane + 1)}`,
+  };
+}
+
+function isActiveSweepCell(head) {
+  return Boolean(
+    sweep &&
+      sweep.phase === "active" &&
+      sweep.cells.some((cell) => cell.x === head.x && cell.y === head.y),
+  );
+}
+
+function resolveAfterDeaths() {
+  const alivePlayerIds = getActivePlayerIds().filter((playerId) => players[playerId]?.alive);
+
+  if (alivePlayerIds.length === 0) {
+    handleDraw();
+    return true;
+  }
+
+  if (alivePlayerIds.length === 1) {
+    endRound(alivePlayerIds[0]);
+    return true;
+  }
+
+  return false;
+}
+
+function resolveSweepActivation() {
+  const hitPlayerIds = getActivePlayerIds().filter((playerId) => {
+    const player = players[playerId];
+    if (!player?.alive) {
+      return false;
+    }
+    const head = player.segments[player.segments.length - 1];
+    return isActiveSweepCell(head);
+  });
+
+  hitPlayerIds.forEach((playerId) => {
+    players[playerId].alive = false;
+  });
+
+  if (hitPlayerIds.length === 0) {
+    return false;
+  }
+
+  return resolveAfterDeaths();
+}
+
+function updateObjective() {
+  if (!objective) {
+    return;
+  }
+
+  if (objective.cells.length > 0) {
+    objective.activeRemaining -= BASE_TICK;
+    if (objective.activeRemaining <= 0) {
+      clearObjective(objective.config.respawnDelayMs);
+    }
+    return;
+  }
+
+  objective.cooldownRemaining -= BASE_TICK;
+  if (objective.cooldownRemaining <= 0) {
+    spawnObjective();
+  }
+}
+
+function updateSweep() {
+  if (!sweep) {
+    return false;
+  }
+
+  sweep.timer -= BASE_TICK;
+  if (sweep.timer > 0) {
+    return false;
+  }
+
+  if (sweep.phase === "idle") {
+    const pattern = getSweepPattern(sweep.sequenceIndex);
+    sweep.phase = "warning";
+    sweep.cells = pattern.cells;
+    sweep.label = `Warning ${pattern.label}`;
+    sweep.timer = sweep.config.warningMs;
+    return false;
+  }
+
+  if (sweep.phase === "warning") {
+    const pattern = getSweepPattern(sweep.sequenceIndex);
+    sweep.phase = "active";
+    sweep.cells = pattern.cells;
+    sweep.label = `Live ${pattern.label}`;
+    sweep.timer = sweep.config.activeMs;
+    state.totalHazardWaves += 1;
+    return resolveSweepActivation();
+  }
+
+  sweep.phase = "idle";
+  sweep.cells = [];
+  sweep.label = "Sweep standby";
+  sweep.timer = sweep.config.intervalMs;
+  sweep.sequenceIndex += 1;
+  return false;
+}
+
+function updateModifiers() {
+  updateObjective();
+  const roundEnded = updateSweep();
+  updateSystemStatus();
+  return roundEnded;
+}
+
+function updateSystemStatus() {
+  const parts = [];
+
+  if (objective) {
+    parts.push(objective.cells.length > 0 ? `Beacon live: +${objective.config.bonusScore}` : "Beacon charging");
+  }
+
+  if (sweep) {
+    parts.push(sweep.phase === "warning" || sweep.phase === "active" ? sweep.label : "Sweep cycling");
+  }
+
+  dom.arenaSystemStatus.textContent = parts.length > 0 ? parts.join(" | ") : "Clean duel. No live room modifiers.";
+}
+
+function setPlayerDirection(playerId, dir) {
+  if (!getActivePlayerIds().includes(playerId)) {
+    return;
+  }
+
+  const player = players[playerId];
+  if (!player?.alive) {
+    return;
+  }
+
+  if ((dir.x !== 0 && player.dir.x === -dir.x) || (dir.y !== 0 && player.dir.y === -dir.y)) {
+    return;
+  }
+
+  player.nextDir = { ...dir };
+}
+
+function handlePlayerPickup(playerId, head) {
+  const player = players[playerId];
 
   if (powerup && head.x === powerup.x && head.y === powerup.y) {
     player.boost = true;
@@ -351,13 +745,94 @@ function movePlayer(player, otherPlayer, isPlayerOne) {
     state.totalPowerups += 1;
   }
 
-  if (isPlayerOne) {
-    state.p1Score += player.boost ? 15 : 10;
-  } else {
-    state.p2Score += player.boost ? 15 : 10;
+  state.playerScores[playerId] += player.boost ? 15 : 10;
+
+  if (isObjectiveCell(head)) {
+    state.playerScores[playerId] += objective.config.bonusScore;
+    state.totalBeaconCaptures += 1;
+    clearObjective(objective.config.respawnDelayMs);
+  }
+}
+
+function checkCollision(playerId, head) {
+  if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+    return true;
   }
 
-  return { head, dead: false };
+  if (obstacleSet.has(cellKey(head.x, head.y)) || isActiveSweepCell(head)) {
+    return true;
+  }
+
+  const ownSegments = players[playerId].segments;
+  const otherSegments = getAllTrailCells(playerId);
+  return [...ownSegments, ...otherSegments].some((segment) => segment.x === head.x && segment.y === head.y);
+}
+
+function processMovement() {
+  const movingPlayerIds = [];
+  const proposedMoves = [];
+
+  getActivePlayerIds().forEach((playerId) => {
+    const player = players[playerId];
+    if (!player?.alive) {
+      return;
+    }
+
+    if (player.boost && Date.now() >= player.boostEnd) {
+      player.boost = false;
+    }
+
+    playerAccums[playerId] += BASE_TICK;
+    const moveTick = player.boost ? TICK_BOOST : TICK_NORMAL;
+
+    if (playerAccums[playerId] < moveTick) {
+      return;
+    }
+
+    playerAccums[playerId] -= moveTick;
+    movingPlayerIds.push(playerId);
+    player.dir = { ...player.nextDir };
+
+    const currentHead = player.segments[player.segments.length - 1];
+    const head = { x: currentHead.x + player.dir.x, y: currentHead.y + player.dir.y };
+
+    if (checkCollision(playerId, head)) {
+      player.alive = false;
+      return;
+    }
+
+    proposedMoves.push({ playerId, head });
+  });
+
+  proposedMoves.forEach(({ playerId, head }) => {
+    players[playerId].segments.push(head);
+  });
+
+  const headGroups = new Map();
+  proposedMoves.forEach(({ playerId, head }) => {
+    const key = cellKey(head.x, head.y);
+    const ids = headGroups.get(key) ?? [];
+    ids.push(playerId);
+    headGroups.set(key, ids);
+  });
+
+  headGroups.forEach((playerIds) => {
+    if (playerIds.length > 1) {
+      playerIds.forEach((playerId) => {
+        players[playerId].alive = false;
+      });
+    }
+  });
+
+  proposedMoves.forEach(({ playerId, head }) => {
+    if (players[playerId].alive) {
+      handlePlayerPickup(playerId, head);
+    }
+  });
+
+  if (movingPlayerIds.length > 0) {
+    state.totalTicks += 1;
+  }
 }
 
 function gameTick() {
@@ -365,71 +840,22 @@ function gameTick() {
     return;
   }
 
-  const now = Date.now();
-  if (p1.boost && now >= p1.boostEnd) p1.boost = false;
-  if (p2.boost && now >= p2.boostEnd) p2.boost = false;
-
-  p1Accum += BASE_TICK;
-  p2Accum += BASE_TICK;
-
-  const p1Tick = p1.boost ? TICK_BOOST : TICK_NORMAL;
-  const p2Tick = p2.boost ? TICK_BOOST : TICK_NORMAL;
-
-  let p1Moved = false;
-  let p2Moved = false;
-  let p1Result = null;
-  let p2Result = null;
-
-  if (p1Accum >= p1Tick) {
-    p1Accum -= p1Tick;
-    p1Moved = true;
-    p1Result = movePlayer(p1, p2, true);
-  }
-
-  if (p2Accum >= p2Tick) {
-    p2Accum -= p2Tick;
-    p2Moved = true;
-    p2Result = movePlayer(p2, p1, false);
-  }
-
-  if (
-    p1Moved &&
-    p2Moved &&
-    p1Result &&
-    p2Result &&
-    !p1Result.dead &&
-    !p2Result.dead &&
-    p1Result.head.x === p2Result.head.x &&
-    p1Result.head.y === p2Result.head.y
-  ) {
-    handleDraw();
-    return;
-  }
-
-  const p1Dead = Boolean(p1Moved && p1Result?.dead);
-  const p2Dead = Boolean(p2Moved && p2Result?.dead);
-
-  if (p1Dead && p2Dead) {
-    handleDraw();
-    return;
-  }
-
-  if (p1Dead) {
-    endRound(2);
-    return;
-  }
-
-  if (p2Dead) {
-    endRound(1);
-    return;
-  }
-
-  if (p1Moved || p2Moved) {
-    state.totalTicks += 1;
+  if (updateModifiers()) {
     render();
     updateHUD();
+    return;
   }
 
+  processMovement();
+
+  if (resolveAfterDeaths()) {
+    render();
+    updateHUD();
+    return;
+  }
+
+  render();
+  updateHUD();
   scheduleTick();
 }
 
@@ -443,60 +869,33 @@ function handleDraw() {
   }, 700);
 }
 
-function checkCollision(head, ownSegments, otherSegments) {
-  if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
-    return true;
-  }
-
-  if (obstacleSet.has(cellKey(head.x, head.y))) {
-    return true;
-  }
-
-  for (const segment of ownSegments) {
-    if (segment.x === head.x && segment.y === head.y) {
-      return true;
-    }
-  }
-
-  for (const segment of otherSegments) {
-    if (segment.x === head.x && segment.y === head.y) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-function endRound(winner) {
+function endRound(winnerId) {
   gameRunning = false;
   clearPowerupTimers();
-
-  if (winner === 1) {
-    state.p1Wins += 1;
-  } else {
-    state.p2Wins += 1;
-  }
+  state.playerWins[winnerId] += 1;
 
   updateHUD();
   render();
 
-  const loserClass = winner === 1 ? ".p2-trail, .p2-head" : ".p1-trail, .p1-head";
-  const loserCells = Array.from(document.querySelectorAll(loserClass));
+  const loserSelectors = getActivePlayerIds()
+    .filter((playerId) => playerId !== winnerId)
+    .map((playerId) => `.${PLAYER_META[playerId].trailClass}, .${PLAYER_META[playerId].headClass}`);
+  const loserCells = Array.from(document.querySelectorAll(loserSelectors.join(", ")));
+
   loserCells.forEach((cell, index) => {
     window.setTimeout(() => cell.classList.add("dissolving"), index * 12);
   });
 
   const dissolveTime = Math.min(loserCells.length * 12 + 300, 1300);
 
-  if (state.p1Wins >= state.winsNeeded || state.p2Wins >= state.winsNeeded) {
-    window.setTimeout(showMatchOver, dissolveTime + 450);
+  if (state.playerWins[winnerId] >= state.winsNeeded) {
+    window.setTimeout(() => showMatchOver(winnerId), dissolveTime + 450);
     return;
   }
 
   state.round += 1;
-  const winnerName = winner === 1 ? state.p1Name : state.p2Name;
   window.setTimeout(() => {
-    showBetweenRounds(`${winnerName} takes the room`);
+    showBetweenRounds(`${state.playerNames[winnerId]} takes the room`);
   }, dissolveTime);
 }
 
@@ -513,9 +912,7 @@ function spawnPowerup() {
     return;
   }
 
-  const occupied = new Set(obstacles.map(({ x, y }) => cellKey(x, y)));
-  p1.segments.forEach(({ x, y }) => occupied.add(cellKey(x, y)));
-  p2.segments.forEach(({ x, y }) => occupied.add(cellKey(x, y)));
+  const occupied = getReservedCells();
 
   for (let attempt = 0; attempt < 120; attempt += 1) {
     const x = Math.floor(Math.random() * (cols - 4)) + 2;
@@ -529,41 +926,46 @@ function spawnPowerup() {
   }
 }
 
+function placeCell(className, x, y) {
+  const cell = document.createElement("div");
+  cell.className = className;
+  cell.style.left = `${x * CELL}px`;
+  cell.style.top = `${y * CELL}px`;
+  dom.arenaGrid.appendChild(cell);
+}
+
 function render() {
   dom.arenaGrid.innerHTML = "";
 
-  obstacles.forEach(({ x, y }) => {
-    const cell = document.createElement("div");
-    cell.className = "obstacle-cell";
-    cell.style.left = `${x * CELL}px`;
-    cell.style.top = `${y * CELL}px`;
-    dom.arenaGrid.appendChild(cell);
+  obstacles.forEach(({ x, y }) => placeCell("obstacle-cell", x, y));
+
+  if (objective) {
+    objective.cells.forEach(({ x, y }) => placeCell("objective-cell", x, y));
+  }
+
+  if (sweep?.phase === "warning") {
+    sweep.cells.forEach(({ x, y }) => placeCell("hazard-cell--warning", x, y));
+  }
+
+  getActivePlayerIds().forEach((playerId) => {
+    const player = players[playerId];
+    if (!player) {
+      return;
+    }
+
+    player.segments.forEach((segment, index) => {
+      const baseClass = index === player.segments.length - 1 ? PLAYER_META[playerId].headClass : PLAYER_META[playerId].trailClass;
+      const className = `cell ${baseClass}${player.boost ? " boost" : ""}`;
+      placeCell(className, segment.x, segment.y);
+    });
   });
 
-  p1.segments.forEach((segment, index) => {
-    const cell = document.createElement("div");
-    cell.className = `cell ${index === p1.segments.length - 1 ? "p1-head" : "p1-trail"}`;
-    if (p1.boost) cell.classList.add("boost");
-    cell.style.left = `${segment.x * CELL}px`;
-    cell.style.top = `${segment.y * CELL}px`;
-    dom.arenaGrid.appendChild(cell);
-  });
-
-  p2.segments.forEach((segment, index) => {
-    const cell = document.createElement("div");
-    cell.className = `cell ${index === p2.segments.length - 1 ? "p2-head" : "p2-trail"}`;
-    if (p2.boost) cell.classList.add("boost");
-    cell.style.left = `${segment.x * CELL}px`;
-    cell.style.top = `${segment.y * CELL}px`;
-    dom.arenaGrid.appendChild(cell);
-  });
+  if (sweep?.phase === "active") {
+    sweep.cells.forEach(({ x, y }) => placeCell("hazard-cell--active", x, y));
+  }
 
   if (powerup) {
-    const orb = document.createElement("div");
-    orb.className = "power-up";
-    orb.style.left = `${powerup.x * CELL}px`;
-    orb.style.top = `${powerup.y * CELL}px`;
-    dom.arenaGrid.appendChild(orb);
+    placeCell("power-up", powerup.x, powerup.y);
   }
 }
 
@@ -577,13 +979,14 @@ function renderPips(target, wins, className) {
 }
 
 function updateHUD() {
-  dom.hudP1Name.textContent = state.p1Name;
-  dom.hudP2Name.textContent = state.p2Name;
-  dom.hudP1Score.textContent = state.p1Score.toLocaleString();
-  dom.hudP2Score.textContent = state.p2Score.toLocaleString();
+  getActivePlayerIds().forEach((playerId) => {
+    const meta = PLAYER_META[playerId];
+    document.getElementById(meta.hudNameId).textContent = state.playerNames[playerId];
+    document.getElementById(meta.hudScoreId).textContent = state.playerScores[playerId].toLocaleString();
+    renderPips(document.getElementById(meta.hudWinsId), state.playerWins[playerId], meta.pipClass);
+  });
+
   dom.hudRound.textContent = formatRound(state.round);
-  renderPips(dom.hudP1Wins, state.p1Wins, "won-p1");
-  renderPips(dom.hudP2Wins, state.p2Wins, "won-p2");
 }
 
 function clearGame() {
@@ -593,26 +996,55 @@ function clearGame() {
   clearTickTimer();
   clearPowerupTimers();
   clearCountdownTimers();
+  objective = null;
+  sweep = null;
+  players = {};
+  playerAccums = {};
   dom.pauseOverlay.classList.remove("overlay--active");
   dom.countdownOverlay.classList.remove("overlay--active");
   dom.arenaGrid.innerHTML = "";
+  updateSystemStatus();
 }
 
-function showMatchOver() {
+function getStandings() {
+  return [...getActivePlayerIds()].sort((left, right) => {
+    if (state.playerWins[right] !== state.playerWins[left]) {
+      return state.playerWins[right] - state.playerWins[left];
+    }
+    return state.playerScores[right] - state.playerScores[left];
+  });
+}
+
+function getStandingLabel(index) {
+  if (index === 0) {
+    return "Champion";
+  }
+  if (index === 1) {
+    return "Runner Up";
+  }
+  return "Third Place";
+}
+
+function showMatchOver(winnerId) {
   clearGame();
   showScreen("matchOver");
 
-  const winner = state.p1Wins >= state.winsNeeded ? 1 : 2;
-  dom.moWinnerName.textContent = winner === 1 ? state.p1Name : state.p2Name;
-  dom.moP1Label.textContent = state.p1Name;
-  dom.moP2Label.textContent = state.p2Name;
-  dom.moP1Score.textContent = state.p1Score.toLocaleString();
-  dom.moP2Score.textContent = state.p2Score.toLocaleString();
-  dom.moP1Badge.textContent = winner === 1 ? "Champion" : "Runner Up";
-  dom.moP2Badge.textContent = winner === 2 ? "Champion" : "Runner Up";
+  const standings = getStandings();
+  const championId = winnerId ?? standings[0];
+  dom.moWinnerName.textContent = state.playerNames[championId];
+
+  getActivePlayerIds().forEach((playerId) => {
+    const meta = PLAYER_META[playerId];
+    document.getElementById(meta.resultLabelId).textContent = state.playerNames[playerId];
+    document.getElementById(meta.resultScoreId).textContent = state.playerScores[playerId].toLocaleString();
+    document.getElementById(meta.resultBadgeId).textContent = getStandingLabel(standings.indexOf(playerId));
+  });
+
   dom.moRounds.textContent = String(state.round);
   dom.moTicks.textContent = state.totalTicks.toLocaleString();
   dom.moPowerups.textContent = state.totalPowerups.toLocaleString();
+  dom.moBeacons.textContent = state.totalBeaconCaptures.toLocaleString();
+  dom.moHazards.textContent = state.totalHazardWaves.toLocaleString();
 }
 
 function togglePause() {
@@ -633,17 +1065,32 @@ function togglePause() {
   scheduleTick();
 }
 
-function startSetupFromLobby() {
-  state.p1Name = dom.p1NameInput.value.trim() || "PLAYER 1";
-  state.p2Name = dom.p2NameInput.value.trim() || "PLAYER 2";
-  state.p1Score = 0;
-  state.p2Score = 0;
-  state.p1Wins = 0;
-  state.p2Wins = 0;
+function resetMatchScores() {
+  PLAYER_IDS.forEach((playerId) => {
+    state.playerScores[playerId] = 0;
+    state.playerWins[playerId] = 0;
+  });
   state.round = 1;
   state.totalTicks = 0;
   state.totalPowerups = 0;
+  state.totalBeaconCaptures = 0;
+  state.totalHazardWaves = 0;
+}
 
+function startSetupFromLobby() {
+  state.isThreePlayer = dom.enableP3.checked;
+  syncThreePlayerUI();
+
+  getActivePlayerIds().forEach((playerId) => {
+    const input = document.getElementById(PLAYER_META[playerId].nameInputId);
+    state.playerNames[playerId] = input.value.trim() || PLAYER_META[playerId].defaultName;
+  });
+
+  if (!state.isThreePlayer) {
+    state.playerNames.p3 = PLAYER_META.p3.defaultName;
+  }
+
+  resetMatchScores();
   const selectedRoundButton = document.querySelector(".round-opt--selected");
   state.winsNeeded = Number.parseInt(selectedRoundButton?.dataset.wins ?? DEFAULT_WINS_NEEDED, 10);
 
@@ -653,16 +1100,12 @@ function startSetupFromLobby() {
 }
 
 function resetMatchStateForRematch() {
-  state.p1Score = 0;
-  state.p2Score = 0;
-  state.p1Wins = 0;
-  state.p2Wins = 0;
-  state.round = 1;
-  state.totalTicks = 0;
-  state.totalPowerups = 0;
+  resetMatchScores();
   assignRandomColors();
   startMatch();
 }
+
+dom.enableP3.addEventListener("change", syncThreePlayerUI);
 
 dom.roundButtons.forEach((button) => {
   button.addEventListener("click", () => {
@@ -688,7 +1131,9 @@ dom.quitMatchBtn.addEventListener("click", () => {
 });
 
 document.addEventListener("keydown", (event) => {
-  if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
+  const key = event.key.toLowerCase();
+
+  if (["arrowup", "arrowdown", "arrowleft", "arrowright"].includes(key)) {
     event.preventDefault();
   }
 
@@ -701,38 +1146,9 @@ document.addEventListener("keydown", (event) => {
     return;
   }
 
-  switch (event.key.toLowerCase()) {
-    case "w":
-      if (p1.dir.y !== 1) p1.nextDir = { x: 0, y: -1 };
-      break;
-    case "s":
-      if (p1.dir.y !== -1) p1.nextDir = { x: 0, y: 1 };
-      break;
-    case "a":
-      if (p1.dir.x !== 1) p1.nextDir = { x: -1, y: 0 };
-      break;
-    case "d":
-      if (p1.dir.x !== -1) p1.nextDir = { x: 1, y: 0 };
-      break;
-    default:
-      break;
-  }
-
-  switch (event.key) {
-    case "ArrowUp":
-      if (p2.dir.y !== 1) p2.nextDir = { x: 0, y: -1 };
-      break;
-    case "ArrowDown":
-      if (p2.dir.y !== -1) p2.nextDir = { x: 0, y: 1 };
-      break;
-    case "ArrowLeft":
-      if (p2.dir.x !== 1) p2.nextDir = { x: -1, y: 0 };
-      break;
-    case "ArrowRight":
-      if (p2.dir.x !== -1) p2.nextDir = { x: 1, y: 0 };
-      break;
-    default:
-      break;
+  const binding = INPUT_BINDINGS.find((candidate) => candidate.key === key);
+  if (binding) {
+    setPlayerDirection(binding.playerId, binding.dir);
   }
 });
 
@@ -747,4 +1163,5 @@ window.addEventListener("resize", () => {
 
 buildLayoutPicker();
 assignRandomColors();
+syncThreePlayerUI();
 syncLayoutSelection();

@@ -44,9 +44,10 @@ function rgbToHex({ r, g, b }) {
 
 export function assignRandomColors() {
   const shuffled = [...PLAYER_COLOR_POOL].sort(() => Math.random() - 0.5);
-  const [p1Color, p2Color] = shuffled;
+  const [p1Color, p2Color, p3Color] = shuffled;
   const p1Rgb = hexToRgb(p1Color);
   const p2Rgb = hexToRgb(p2Color);
+  const p3Rgb = hexToRgb(p3Color);
   const root = document.documentElement.style;
 
   root.setProperty("--p1-color", p1Color);
@@ -60,6 +61,12 @@ export function assignRandomColors() {
   root.setProperty("--p2-boost-color", rgbToHex(mixWithWhite(p2Rgb, 0.52)));
   root.setProperty("--p2-glow", `rgba(${p2Rgb.r}, ${p2Rgb.g}, ${p2Rgb.b}, 0.42)`);
   root.setProperty("--p2-glow-boost", `rgba(${p2Rgb.r}, ${p2Rgb.g}, ${p2Rgb.b}, 0.78)`);
+
+  root.setProperty("--p3-color", p3Color);
+  root.setProperty("--p3-head-color", rgbToHex(mixWithWhite(p3Rgb, 0.28)));
+  root.setProperty("--p3-boost-color", rgbToHex(mixWithWhite(p3Rgb, 0.52)));
+  root.setProperty("--p3-glow", `rgba(${p3Rgb.r}, ${p3Rgb.g}, ${p3Rgb.b}, 0.42)`);
+  root.setProperty("--p3-glow-boost", `rgba(${p3Rgb.r}, ${p3Rgb.g}, ${p3Rgb.b}, 0.78)`);
 }
 
 export function formatRound(round) {

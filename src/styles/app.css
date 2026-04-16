@@ -19,6 +19,11 @@
   --p2-boost-color: #aafaf3;
   --p2-glow: rgba(46, 230, 214, 0.42);
   --p2-glow-boost: rgba(46, 230, 214, 0.78);
+  --p3-color: #9df85b;
+  --p3-head-color: #c3ff97;
+  --p3-boost-color: #ddffbb;
+  --p3-glow: rgba(157, 248, 91, 0.42);
+  --p3-glow-boost: rgba(157, 248, 91, 0.78);
   --warning: #ffd166;
   --shadow: 0 24px 80px rgba(3, 8, 18, 0.45);
   --cell-size: 28px;
@@ -245,6 +250,10 @@ button {
   font-size: 1.45rem;
 }
 
+.is-hidden {
+  display: none !important;
+}
+
 .stack {
   display: flex;
   flex-direction: column;
@@ -271,6 +280,29 @@ button {
   color: var(--muted-soft);
   line-height: 1.5;
   font-size: 0.92rem;
+}
+
+.toggle-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  background: var(--panel-soft);
+  cursor: pointer;
+}
+
+.toggle-row__copy {
+  display: flex;
+  flex-direction: column;
+}
+
+.toggle-row__check {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--accent);
+  cursor: pointer;
 }
 
 .player-input {
@@ -300,6 +332,10 @@ button {
 
 .player-input--p2:focus {
   border-color: var(--p2-color);
+}
+
+.player-input--p3:focus {
+  border-color: var(--p3-color);
 }
 
 .option-block {
@@ -457,7 +493,7 @@ button {
 
 .controls-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -511,13 +547,70 @@ button {
   color: var(--p2-color);
 }
 
-.idea-list {
+.control-card__label--p3 {
+  color: var(--p3-color);
+}
+
+.control-card--optional {
+  opacity: 0.55;
+  transition: opacity 150ms ease, transform 150ms ease;
+}
+
+.control-card--optional.control-card--active {
+  opacity: 1;
+}
+
+.system-list {
   display: grid;
   gap: 14px;
+}
+
+.system-card {
+  padding: 16px 18px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.system-card__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.system-card__title,
+.system-card__copy {
   margin: 0;
-  padding-left: 20px;
+}
+
+.system-card__title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.system-card__copy {
   color: var(--muted);
-  line-height: 1.6;
+  line-height: 1.55;
+  font-size: 0.92rem;
+}
+
+.system-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text);
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
 }
 
 #arena {
@@ -547,6 +640,16 @@ button {
   gap: 20px;
 }
 
+.hud-team {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.hud-team--right {
+  align-items: flex-end;
+}
+
 .hud-player {
   display: flex;
   flex-direction: column;
@@ -573,6 +676,11 @@ button {
 .hud-player--p2 .hud-player__score,
 .hud-player--p2 .hud-player__label {
   color: var(--p2-color);
+}
+
+.hud-player--p3 .hud-player__score,
+.hud-player--p3 .hud-player__label {
+  color: var(--p3-color);
 }
 
 .hud-center {
@@ -620,6 +728,10 @@ button {
   background: var(--p2-color);
 }
 
+.hud-wins .pip.won-p3 {
+  background: var(--p3-color);
+}
+
 .arena-stage {
   position: relative;
   display: flex;
@@ -644,6 +756,9 @@ button {
 
 .cell,
 .obstacle-cell,
+.objective-cell,
+.hazard-cell--warning,
+.hazard-cell--active,
 .power-up {
   position: absolute;
   width: var(--cell-size);
@@ -662,12 +777,46 @@ button {
   box-shadow: inset 0 0 0 1px rgba(255, 176, 125, 0.18);
 }
 
+.objective-cell {
+  border-radius: 10px;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.24), transparent 60%),
+    rgba(70, 120, 255, 0.26);
+  box-shadow:
+    inset 0 0 0 1px rgba(120, 176, 255, 0.38),
+    0 0 18px rgba(74, 132, 255, 0.22);
+  animation: objective-pulse 1.2s ease-in-out infinite;
+}
+
+.hazard-cell--warning,
+.hazard-cell--active {
+  border-radius: 8px;
+}
+
+.hazard-cell--warning {
+  background: rgba(255, 178, 74, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(255, 209, 102, 0.42);
+}
+
+.hazard-cell--active {
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.18), transparent 58%),
+    rgba(255, 87, 87, 0.46);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 151, 151, 0.42),
+    0 0 18px rgba(255, 87, 87, 0.28);
+}
+
 .p1-trail {
   background: var(--p1-color);
 }
 
 .p2-trail {
   background: var(--p2-color);
+}
+
+.p3-trail {
+  background: var(--p3-color);
 }
 
 .p1-head {
@@ -680,6 +829,11 @@ button {
   box-shadow: 0 0 16px 4px var(--p2-glow);
 }
 
+.p3-head {
+  background: var(--p3-head-color);
+  box-shadow: 0 0 16px 4px var(--p3-glow);
+}
+
 .p1-trail.boost {
   background: var(--p1-boost-color);
 }
@@ -688,12 +842,20 @@ button {
   background: var(--p2-boost-color);
 }
 
+.p3-trail.boost {
+  background: var(--p3-boost-color);
+}
+
 .p1-head.boost {
   box-shadow: 0 0 24px 8px var(--p1-glow-boost);
 }
 
 .p2-head.boost {
   box-shadow: 0 0 24px 8px var(--p2-glow-boost);
+}
+
+.p3-head.boost {
+  box-shadow: 0 0 24px 8px var(--p3-glow-boost);
 }
 
 .power-up {
@@ -763,6 +925,11 @@ button {
   box-shadow: 0 0 16px rgba(255, 209, 102, 0.45);
 }
 
+.hint-dot--alert {
+  background: #79a8ff;
+  box-shadow: 0 0 16px rgba(121, 168, 255, 0.45);
+}
+
 .hint-key {
   display: inline-flex;
   align-items: center;
@@ -829,7 +996,7 @@ button {
 .results-scores {
   width: min(760px, 100%);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 16px;
 }
 
@@ -847,6 +1014,10 @@ button {
 
 .score-card--p2 {
   box-shadow: inset 0 -4px 0 rgba(46, 230, 214, 0.5);
+}
+
+.score-card--p3 {
+  box-shadow: inset 0 -4px 0 rgba(157, 248, 91, 0.5);
 }
 
 .score-card__label,
@@ -868,6 +1039,10 @@ button {
 
 .score-card--p2 .score-card__value {
   color: var(--p2-color);
+}
+
+.score-card--p3 .score-card__value {
+  color: var(--p3-color);
 }
 
 .results-actions {
@@ -929,6 +1104,23 @@ button {
   50% {
     transform: scale(1.08);
     box-shadow: 0 0 28px rgba(255, 209, 102, 0.58);
+  }
+}
+
+@keyframes objective-pulse {
+  0%,
+  100% {
+    transform: scale(0.98);
+    box-shadow:
+      inset 0 0 0 1px rgba(120, 176, 255, 0.38),
+      0 0 14px rgba(74, 132, 255, 0.18);
+  }
+
+  50% {
+    transform: scale(1.02);
+    box-shadow:
+      inset 0 0 0 1px rgba(154, 198, 255, 0.5),
+      0 0 24px rgba(74, 132, 255, 0.3);
   }
 }
 

@@ -105,6 +105,15 @@ export const ARENA_LAYOUTS = [
       ".......",
       ".......",
     ],
+    systems: {
+      summaries: [
+        {
+          label: "Core Duel",
+          status: "Stable",
+          description: "Only trails, walls, and boost orbs are active here. Use it for pure head-to-head routing.",
+        },
+      ],
+    },
     build() {
       return [];
     },
@@ -122,6 +131,25 @@ export const ARENA_LAYOUTS = [
       "...#...",
       "...#...",
     ],
+    systems: {
+      beacon: {
+        label: "Objective Beacon",
+        status: "Live",
+        description: "A roaming 2x2 control zone awards bonus score when a rider breaks through and captures it.",
+        bonusScore: 40,
+        size: 2,
+        spawnDelayMs: 2400,
+        durationMs: 7000,
+        respawnDelayMs: 2600,
+      },
+      summaries: [
+        {
+          label: "Objective Beacon",
+          status: "Live",
+          description: "A roaming 2x2 control zone awards bonus score when a rider breaks through and captures it.",
+        },
+      ],
+    },
     build: splitChamber,
   },
   {
@@ -137,6 +165,39 @@ export const ARENA_LAYOUTS = [
       "...#...",
       "...#...",
     ],
+    systems: {
+      beacon: {
+        label: "Objective Beacon",
+        status: "Live",
+        description: "Central pressure is rewarded with a score beacon that relocates after each capture.",
+        bonusScore: 50,
+        size: 2,
+        spawnDelayMs: 2200,
+        durationMs: 6200,
+        respawnDelayMs: 2200,
+      },
+      sweep: {
+        label: "Sweep Hazard",
+        status: "Live",
+        description: "Warning strips flash before a lethal cross-lane sweep activates across a row or column.",
+        axisMode: "alternate",
+        intervalMs: 5000,
+        warningMs: 1400,
+        activeMs: 1000,
+      },
+      summaries: [
+        {
+          label: "Objective Beacon",
+          status: "Live",
+          description: "Central pressure is rewarded with a score beacon that relocates after each capture.",
+        },
+        {
+          label: "Sweep Hazard",
+          status: "Live",
+          description: "Warning strips flash before a lethal cross-lane sweep activates across a row or column.",
+        },
+      ],
+    },
     build: crossfire,
   },
   {
@@ -152,6 +213,39 @@ export const ARENA_LAYOUTS = [
       ".#...#.",
       ".#####.",
     ],
+    systems: {
+      beacon: {
+        label: "Objective Beacon",
+        status: "Live",
+        description: "A high-value beacon can spawn inside or around the ring, baiting risky dives through narrow gates.",
+        bonusScore: 60,
+        size: 2,
+        spawnDelayMs: 2600,
+        durationMs: 5600,
+        respawnDelayMs: 2200,
+      },
+      sweep: {
+        label: "Sweep Hazard",
+        status: "Live",
+        description: "Timed sweep waves cut across the box and punish players who overstay in the ring.",
+        axisMode: "row",
+        intervalMs: 4600,
+        warningMs: 1200,
+        activeMs: 1100,
+      },
+      summaries: [
+        {
+          label: "Objective Beacon",
+          status: "High Value",
+          description: "A high-value beacon can spawn inside or around the ring, baiting risky dives through narrow gates.",
+        },
+        {
+          label: "Sweep Hazard",
+          status: "Live",
+          description: "Timed sweep waves cut across the box and punish players who overstay in the ring.",
+        },
+      ],
+    },
     build: hazardRing,
   },
 ];
